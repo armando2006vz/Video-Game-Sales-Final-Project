@@ -11,8 +11,83 @@ const data = await d3.csv('data/vgsales.csv', d => ({
     Global_Sales: +d.Global_Sales
 }));
 
-const cleanData = data.filter(d => d.Year >= 1980 && d.Year <= 2016);
+const cleanData = data.filter(d => Number.isInteger(d.Year) && d.Year >= 1980 && d.Year <= 2016);
 
 const yearlySales = d3.rollups(cleanData, v => d3.sum(v, d => d.Global_Sales), d => d.Year, d => d.Platform);
 
 console.log(yearlySales);
+
+const rankedSales = yearlySales.sort((a, b) => a[0] - b[0]).map(([year, platforms]) => {
+    platforms.sort((a, b) => b[1] - a[1]);
+
+    return platforms.map(([platform, sales], index) => ({
+        year: year,
+        platform: platform,
+        sales: sales,
+        rank: index + 1
+    }));
+}).flat();
+
+console.log(rankedSales);
+
+const platformData = d3.groups(rankedSales, d => d.platform);
+console.log(platformData);
+
+const width = 1000;
+const height = 550;
+
+const margin = { top: 50, right: 150, bottom: 50, left: 100 };
+
+const svg = d3.select('#chart')
+    .append('svg')
+    .attr('viewBox', `0 0 ${width} ${height}`)
+    .style('width', '100%')
+    .style('height', 'auto');
+
+    const xScale = d3.scaleLinear()
+    .domain([1980, 2016])
+    .range([margin.left, width - margin.right]);
+
+    const yScale = d3.scaleLinear()
+    .domain([1, 11])
+    .range([margin.top, height - margin.bottom]);
+
+    const colorScale = d3.scaleOrdinal()
+    .domain(platformData.map(d => d[0]))
+    .range(d3.schemeTableau10);
+
+    svg.append('g')
+    .attr('transform', `translate(0, ${height - margin.bottom})`)
+    .call(d3.axisBottom(xScale).tickFormat(d3.format('d')));
+
+    svg.append('g')
+    .attr('transform', `translate(${margin.left}, 0)`)
+    .call(d3.axisLeft(yScale).ticks(10).tickFormat(d3.format('d')));
+
+    svg.append('text')
+    .attr('x', width / 2)
+    .attr('y', height - 15)
+    .style('text-anchor', 'middle')
+    .text('Year');
+
+    svg.append('text')
+    .attr('transform', 'rotate(-90)')
+    .attr('x', -height / 2)
+    .attr('y', 20)
+    .style('text-anchor', 'middle')
+    .text('Platform Rank');
+
+    const line = d3.line()
+    .defined(d => d.rank <= 10)
+    .x(d => xScale(d.year))
+    .y(d => yScale(d.rank));
+
+    svg.selectAll('.platform-line')
+    .data(platformData)
+    .join('path')
+    .attr('class', 'platform-line')
+    .attr('fill', 'none')
+    .attr('stroke', d => colorScale(d[0]))
+    .attr('stroke-width', 2.5)
+    .attr('opacity', 0.8)
+    .attr('d', d => line(d[1]));
