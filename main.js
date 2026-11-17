@@ -82,7 +82,14 @@ const svg = d3.select('#chart')
     .x(d => xScale(d.year))
     .y(d => yScale(d.rank));
 
-    svg.selectAll('.platform-line')
+    const tooltip = d3.select('body')
+    .append('div')
+    .attr('class', 'tooltip')
+    .style('position', 'fixed')
+    .style('visibility', 'hidden')
+    .style('pointer-events', 'none');
+
+    const platformLines = svg.selectAll('.platform-line')
     .data(platformData)
     .join('path')
     .attr('class', 'platform-line')
@@ -90,4 +97,36 @@ const svg = d3.select('#chart')
     .attr('stroke', d => colorScale(d[0]))
     .attr('stroke-width', 2.5)
     .attr('opacity', 0.8)
-    .attr('d', d => line(d[1]));
+    .attr('d', d => line(d[1]))
+    .on('mouseover', function (event, d) {
+        platformLines.attr('opacity', 0.1);
+
+        d3.select(this)
+            .attr('opacity', 1)
+            .attr('stroke-width', 5)
+            .raise();
+
+        tooltip
+            .style('visibility', 'visible')
+            .html(`<strong>Platform:</strong> ${d[0]}`);
+    })
+    .on('mousemove', function (event) {
+        tooltip
+            .style('top', (event.clientY + 10) + 'px')
+            .style('left', (event.clientX + 10) + 'px');
+    })
+    .on('mouseout', function (event, d) {
+        platformLines
+        .attr('opacity', 0.8)
+        .attr('stroke-width', 2.5);
+
+        tooltip.style('visibility', 'hidden');
+    });
+    
+    svg.on('mouseleave', function () {
+        platformLines
+            .attr('opacity', 0.8)
+            .attr('stroke-width', 2.5);
+
+        tooltip.style('visibility', 'hidden');
+    });
