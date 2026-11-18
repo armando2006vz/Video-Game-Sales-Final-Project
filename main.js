@@ -68,7 +68,7 @@ const svg = d3.select('#chart')
     .attr('x', width / 2)
     .attr('y', height - 15)
     .style('text-anchor', 'middle')
-    .text('Year');
+    .text('Game Release Year');
 
     svg.append('text')
     .attr('transform', 'rotate(-90)')
@@ -110,7 +110,28 @@ const svg = d3.select('#chart')
             .style('visibility', 'visible')
             .html(`<strong>Platform:</strong> ${d[0]}`);
     })
-    .on('mousemove', function (event) {
+    .on('mousemove', function (event, d) {
+        
+        const [mouseX] = d3.pointer(event, svg.node());
+        const year = Math.round(xScale.invert(mouseX));
+        const platform = d[0];
+        const point = rankedSales.find(row => row.platform === platform && row.year === year);
+
+        if (point) {
+            tooltip
+            .style('visibility', 'visible')
+            .html(`
+                <strong>Platform:</strong> ${point.platform}<br>
+                <strong>Release Year:</strong> ${point.year}<br>
+                <strong>Rank:</strong> ${point.rank}<br>
+                <strong>Global Game Sales:</strong> ${point.sales.toFixed(2)} million
+            `);
+    
+        } else {
+            tooltip.style('visibility', 'hidden');
+        }
+        
+        
         tooltip
             .style('top', (event.clientY + 10) + 'px')
             .style('left', (event.clientX + 10) + 'px');
