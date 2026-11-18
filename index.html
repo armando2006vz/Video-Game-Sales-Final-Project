@@ -15,6 +15,40 @@
 
     <div id="chart"></div>
 
+    <div id="timeline-controls">
+
+        <button id="play-button">Play</button>
+        <button id="restart-button">Restart</button>
+
+
+        <label for="year-slider">Release Year:</label>
+
+        <input
+        type="range"
+        id="year-slider"
+        min="1980"
+        max="2016"
+        value="1980"
+        step="1"
+        >
+        <span id="year-display">1980</span>
+
+        <label for="speed-select">Speed:</label>
+        <select id="speed-select">
+            <option value="1000">1x</option>
+            <option value="500">2x</option>
+            <option value="250">3x</option>
+        </select>
+
+        <label for="top-select">Show:</label>
+<select id="top-select">
+    <option value="5" selected>Top 5</option>
+    <option value="10">Top 10</option>
+</select>
+
+
+    </div>
+
     <script type="module" src = "main.js"></script>
     
 </body>

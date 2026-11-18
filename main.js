@@ -30,7 +30,21 @@ const rankedSales = yearlySales.sort((a, b) => a[0] - b[0]).map(([year, platform
 
 console.log(rankedSales);
 
-const platformData = d3.groups(rankedSales, d => d.platform);
+const platformData = d3.groups(rankedSales, d => d.platform)
+.map(([platform, records]) => {
+    const years = d3.range(1980, 2017);
+
+    const completeRecords = years.map(year => {
+        const point = records.find(r => r.year === year);
+        return point || {
+            year: year,
+            platform: platform,
+            sales: null,
+            rank: null
+        };
+    });
+    return [platform, completeRecords];
+});
 console.log(platformData);
 
 const width = 1000;
@@ -49,7 +63,7 @@ const svg = d3.select('#chart')
     .range([margin.left, width - margin.right]);
 
     const yScale = d3.scaleLinear()
-    .domain([1, 11])
+    .domain([1, 5])
     .range([margin.top, height - margin.bottom]);
 
     const colorScale = d3.scaleOrdinal()
@@ -60,9 +74,12 @@ const svg = d3.select('#chart')
     .attr('transform', `translate(0, ${height - margin.bottom})`)
     .call(d3.axisBottom(xScale).tickFormat(d3.format('d')));
 
-    svg.append('g')
+    const yAxis = svg.append('g')
     .attr('transform', `translate(${margin.left}, 0)`)
-    .call(d3.axisLeft(yScale).ticks(10).tickFormat(d3.format('d')));
+    .call(
+        d3.axisLeft(yScale)
+            .tickValues(d3.range(1, 6))
+    );
 
     svg.append('text')
     .attr('x', width / 2)
@@ -77,8 +94,10 @@ const svg = d3.select('#chart')
     .style('text-anchor', 'middle')
     .text('Platform Rank');
 
+    let selectedYear = 1980;
+    let topN = 5;
     const line = d3.line()
-    .defined(d => d.rank <= 10)
+    .defined(d => d.rank !== null && d.rank <= topN && d.year <= selectedYear)
     .x(d => xScale(d.year))
     .y(d => yScale(d.rank));
 
@@ -117,7 +136,7 @@ const svg = d3.select('#chart')
         const platform = d[0];
         const point = rankedSales.find(row => row.platform === platform && row.year === year);
 
-        if (point) {
+        if (point && point.year <= selectedYear && point.rank <= topN) {
             tooltip
             .style('visibility', 'visible')
             .html(`
@@ -151,3 +170,112 @@ const svg = d3.select('#chart')
 
         tooltip.style('visibility', 'hidden');
     });
+
+    
+const yearSlider = d3.select('#year-slider');
+const yearDisplay = d3.select('#year-display');
+const playButton = d3.select('#play-button');
+const restartButton = d3.select('#restart-button');
+const speedSelect = d3.select('#speed-select');
+
+let timer = null;
+
+// Update the chart for the selected year
+function updateChart(year) {
+    selectedYear = year;
+
+    yearSlider.property('value', selectedYear);
+    yearDisplay.text(selectedYear);
+
+    platformLines.attr('d', d => line(d[1]));
+}
+
+// Stop the animation
+function pauseAnimation() {
+    clearInterval(timer);
+    timer = null;
+    playButton.text('Play');
+}
+
+// Start the animation
+function playAnimation() {
+
+    if (timer !== null) {
+        return;
+    }
+
+    if (selectedYear >= 2016) {
+        updateChart(1980);
+    }
+
+    playButton.text('Pause');
+
+    const speed = +speedSelect.property('value');
+
+    timer = setInterval(() => {
+
+        if (selectedYear >= 2016) {
+            pauseAnimation();
+            return;
+        }
+
+        updateChart(selectedYear + 1);
+
+        if (selectedYear >= 2016) {
+            pauseAnimation();
+        }
+
+    }, speed);
+}
+
+// Play or pause
+playButton.on('click', function() {
+
+    if (timer === null) {
+        playAnimation();
+    } else {
+        pauseAnimation();
+    }
+
+});
+
+// Restart from 1980
+restartButton.on('click', function() {
+    pauseAnimation();
+    updateChart(1980);
+});
+
+// Manual slider movement
+yearSlider.on('input', function() {
+    pauseAnimation();
+    updateChart(+this.value);
+});
+
+// Change animation speed
+speedSelect.on('change', function() {
+
+    if (timer !== null) {
+        pauseAnimation();
+        playAnimation();
+    }
+
+});
+
+
+const topNSelect = d3.select('#top-select');
+
+topNSelect.on('change', function() {
+    topN = +this.value;
+
+    // Adjust the y-axis scale
+    yScale.domain([1, topN]);
+
+    // Update the y-axis labels
+    yAxis.call(
+        d3.axisLeft(yScale)
+            .tickValues(d3.range(1, topN + 1))
+    );
+
+    // Redraw platform lines
+    platformLines.attr('d', d => line(d[1]));
+});
