@@ -117,6 +117,34 @@ const regionSelect = d3.select('#region-select');
 
 let timer = null;
 
+const tooltip = d3.select('body').append('div').attr('class', 'tooltip');
+
+function moveTooltip(event) {
+    tooltip
+        .style('left', (event.clientX + 10) + 'px')
+        .style('top', (event.clientY - 28) + 'px');
+};
+
+function showTooltip(event, d) {
+    const regionName = regionSelect.select(`option[value="${selectedRegion}"]`).text();
+    const currendata = getyearSales(selectedYear);
+    const rank = currendata.findIndex(p => p.platform === d.platform) + 1;
+    tooltip
+    .style('visibility', 'visible')
+    .html(`
+        <strong>Platform:</strong> ${d.platform}<br>
+        <strong>Sales:</strong> ${d.sales.toFixed(1)}M<br>
+        <strong>Rank:</strong> ${rank}<br>
+        <strong>Region:</strong> ${regionName}
+    `);
+    moveTooltip(event);
+
+}
+
+function hideTooltip() {
+    tooltip.style('visibility', 'hidden');
+}
+
 function getyearSales(year) {
     const yearData = cleanData.filter(d => d.Year === year);
     const salesByPlatform = d3.rollups(
@@ -208,7 +236,10 @@ function updateChart(year) {
                 .duration(300)
                 .attr('width', 0)
                 .remove()
-        );
+            )
+            .on('mouseover', showTooltip)
+            .on('mousemove', moveTooltip)
+            .on('mouseout', hideTooltip);
         svg.selectAll('.bar-label')
             .data(currentData, d => d.platform)
             .join(
