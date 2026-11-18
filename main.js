@@ -67,6 +67,7 @@ const svg = d3.select('#chart')
 // Initial settings
 let selectedYear = 1980;
 let topN = 5;
+let selectedRegion = 'Global_Sales';
 
 // Sales scale (horizontal)
 const xScale = d3.scaleLinear()
@@ -112,16 +113,57 @@ const playButton = d3.select('#play-button');
 const restartButton = d3.select('#restart-button');
 const speedSelect = d3.select('#speed-select');
 const topNSelect = d3.select('#top-select');
+const regionSelect = d3.select('#region-select');
 
 let timer = null;
+
+function getyearSales(year) {
+    const yearData = cleanData.filter(d => d.Year === year);
+    const salesByPlatform = d3.rollups(
+        yearData, 
+        v => d3.sum(v, d => d[selectedRegion]),
+         d => d.Platform);
+
+         return salesByPlatform
+         .map(([platform, sales]) => ({ 
+            platform: platform,
+            sales: sales 
+        }))
+        .filter(d => d.sales > 0)
+        .sort((a, b) => b.sales - a.sales)
+        .slice(0, topN);
+    }
+
+
+regionSelect.on('change', function() {
+    selectedRegion = this.value;
+    updateChart(selectedYear);
+});
+
+function updateStoryboard(year, currentData) {
+    const storyTitle = d3.select('#story-title');
+    const storyText = d3.select('#story-text');
+
+    if (currentData.length === 0) {
+        storyTitle.text(`No data available for ${year}`);
+        storyText.text(`There are no sales data available for the year ${year}.`);
+        return;
+    }
+    const leadingPlatform = currentData[0].platform;
+    const leadingSales = currentData[0].sales.toFixed(1);
+
+    const regionName = regionSelect.select(`option[value="${selectedRegion}"]`).text();
+
+    storyTitle.text(`Top Platform in ${year}`);
+    storyText.text(`In ${year}, the leading platform was ${leadingPlatform} with estimated sales of ${leadingSales} million units in the ${regionName} region.`);
+}
+
 
 function updateChart(year) {
     selectedYear = year;
 
     // Get the highest-selling platforms for this release year
-    const currentData = rankedSales
-        .filter(d => d.year === selectedYear && d.rank <= topN)
-        .sort((a, b) => a.rank - b.rank);
+    const currentData = getyearSales(selectedYear);
 
     // Update horizontal sales scale
     const maxSales = d3.max(currentData, d => d.sales) || 1;
@@ -131,9 +173,9 @@ function updateChart(year) {
     yScale.domain(currentData.map(d => d.platform));
 
     // Update axes
-    xAxis.call(d3.axisBottom(xScale).ticks(6));
+    xAxis.transition().duration(500).call(d3.axisBottom(xScale).ticks(5).tickFormat(d => d + 'M'));
 
-    yAxis.call(d3.axisLeft(yScale).tickSize(0));
+    yAxis.transition().duration(500).call(d3.axisLeft(yScale).tickSize(0).tickPadding(10));
     yAxis.select('.domain').remove();
 
     // Draw bars
@@ -146,6 +188,7 @@ function updateChart(year) {
                 .attr('y', d => yScale(d.platform))
                 .attr('height', yScale.bandwidth())
                 .attr('width', 0)
+                .attr('rx', 5)
                 .attr('fill', d => colorScale(d.platform))
                 .call(enter => enter.transition()
                     .duration(500)
@@ -166,11 +209,32 @@ function updateChart(year) {
                 .attr('width', 0)
                 .remove()
         );
+        svg.selectAll('.bar-label')
+            .data(currentData, d => d.platform)
+            .join(
+                enter => enter.append('text')
+                    .attr('class', 'bar-label')
+                    .attr('x', d => xScale(d.sales) + 8)
+                    .attr('y', d => yScale(d.platform) + yScale.bandwidth() / 2)
+                    .attr('dy', '0.35em')
+                    .text(d => d.sales.toFixed(1) + 'M'),
+                
+                    update => update
+                .text(d => d.sales.toFixed(1) + 'M')
+                .call(update => update.transition()
+                .duration(500)
+                .attr('x', d => xScale(d.sales) + 8)
+                .attr('y', d => yScale(d.platform) + yScale.bandwidth() / 2)
+            ),
+                
+                exit => exit.remove() 
+            );
 
     // Update year displays
     yearLabel.text(selectedYear);
     yearSlider.property('value', selectedYear);
     yearDisplay.text(selectedYear);
+    updateStoryboard(selectedYear, currentData);
 }
 
 // Stop animation
@@ -204,6 +268,7 @@ function playAnimation() {
             pauseAnimation();
         }
     }, speed);
+
 }
 
 // Play / Pause

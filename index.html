@@ -1,55 +1,90 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Console Wars: The Battle for Video Game Sales</title>
+    <title>Console Wars</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <h1>Console Wars: The Battle for Video Game Sales</h1>
+<main class="dashboard">
 
-    <p>How gaming platforms competed for game releases from 1980 to 2016</p>
-    <p>The estimated global sales of video games across different platforms</p>
+    <header class="dashboard-header">
+        <p class="section-label">INTERACTIVE DATA STORY · 1980–2016</p>
+        <h1>CONSOLE WARS</h1>
+        <p class="subtitle">
+            Which gaming platforms dominated each era?
+            Explore estimated video game sales by release year.
+        </p>
+    </header>
 
-    <div id="chart"></div>
+    <section class="chart-card">
 
-    <div id="timeline-controls">
+        <div class="chart-header">
+            <div>
+                <p class="section-label">PLATFORM RANKINGS</p>
+                <h2>Top-Selling Gaming Platforms</h2>
+            </div>
 
-        <button id="play-button">Play</button>
-        <button id="restart-button">Restart</button>
+            <div class="year-counter">
+                <span>RELEASE YEAR</span>
+                <strong id="year-display">1980</strong>
+            </div>
+        </div>
 
+        <div id="chart"></div>
 
-        <label for="year-slider">Release Year:</label>
+        <div id="timeline-controls">
 
-        <input
-        type="range"
-        id="year-slider"
-        min="1980"
-        max="2016"
-        value="1980"
-        step="1"
-        >
-        <span id="year-display">1980</span>
+            <button id="play-button">Play</button>
+            <button id="restart-button">Restart</button>
 
-        <label for="speed-select">Speed:</label>
-        <select id="speed-select">
-            <option value="1000">1x</option>
-            <option value="500">2x</option>
-            <option value="250">3x</option>
-        </select>
+            <label for="year-slider">Year</label>
+            <input type="range" id="year-slider"
+                min="1980" max="2016" value="1980">
 
-        <label for="top-select">Show:</label>
-<select id="top-select">
-    <option value="5" selected>Top 5</option>
-    <option value="10">Top 10</option>
-</select>
+            <label for="speed-select">Speed</label>
+            <select id="speed-select">
+                <option value="2000">0.5x</option>
+                <option value="1000">1x</option>
+                <option value="500">2x</option>
+                <option value="250">4x</option>
+            </select>
 
+            <label for="top-select">Show</label>
+            <select id="top-select">
+                <option value="5">Top 5</option>
+                <option value="10">Top 10</option>
+            </select>
 
-    </div>
+            <label for="region-select">Region</label>
+            <select id="region-select">
+                <option value="Global_Sales">Global</option>
+                <option value="NA_Sales">North America</option>
+                <option value="EU_Sales">Europe</option>
+                <option value="JP_Sales">Japan</option>
+                <option value="Other_Sales">Other</option>
+            </select>
 
-    <script type="module" src = "main.js"></script>
-    
+        </div>
+    </section>
+
+    <section class="story-card">
+        <p class="section-label">THE STORY BEHIND THE RANKINGS</p>
+        <h2 id="story-title">The Early Years of Gaming</h2>
+        <p id="story-text"></p>
+    </section>
+
+    <footer>
+        Source: Video Game Sales dataset (vgsales.csv).
+        Sales are estimates in millions of copies.
+        Values are grouped by game release year, not calendar-year purchases.
+    </footer>
+
+</main>
+
+<script type="module" src="main.js"></script>
 </body>
 </html>
