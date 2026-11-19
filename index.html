@@ -109,6 +109,66 @@
         <p id="story-text"></p>
     </section>
 
+
+<section class="writeup-section">
+
+    <p class="section-label">PROJECT DOCUMENTATION</p>
+    <h2>Project Progress & Challenges</h2>
+
+    <div class="writeup-card">
+        <h3>1. What have you done so far?</h3>
+
+        <p>
+            So far, we have created an interactive visualization that
+            automatically progresses through the different years in our
+            dataset, displaying a bar chart of video game sales across
+            gaming platforms.
+        </p>
+
+        <p>
+            Users can filter the visualization by region and choose
+            whether to display the top five or top ten platforms.
+            We also added a dynamically updating informational section
+            that highlights the leading platform and its estimated
+            game sales for each year, making the story easier to follow.
+        </p>
+
+        <p>
+            Finally, we implemented playback speed controls so viewers
+            can explore the progression of gaming platforms at their
+            preferred pace.
+        </p>
+    </div>
+
+    <div class="writeup-card">
+        <h3>2. What will be the most challenging part of your project to design and why?</h3>
+
+        <p>
+            We believe one of the most challenging parts of this project
+            is designing dynamic x- and y-axes. Our dataset contains
+            platforms with estimated game sales ranging from less than
+            one million to over 170 million copies, making it difficult
+            to maintain a consistent scale across years.
+        </p>
+
+        <p>
+            Additionally, some years contain only a few platforms,
+            while others have enough to display all ten rankings.
+            This creates challenges when adjusting the chart layout
+            dynamically.
+        </p>
+
+        <p>
+            Another challenge is animating the bars themselves.
+            Since we want to communicate changes in platform rankings
+            over time, we aim to create smoother transitions that
+            emphasize both changes in bar length and movement
+            between rankings.
+        </p>
+    </div>
+
+</section>
+
     <footer>
         Source: Video Game Sales dataset (vgsales.csv).
         Sales are estimates in millions of copies.

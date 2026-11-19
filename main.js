@@ -95,6 +95,8 @@ svg.append('text')
     .attr('x', width / 2)
     .attr('y', height - 15)
     .attr('text-anchor', 'middle')
+    .attr('fill', 'white')
+    .attr('font-size', '16px')
     .text('Estimated Global Game Sales (Millions)');
 
 // Large year label
@@ -434,6 +436,15 @@ const gameXScale = d3.scaleLinear()
 const gameYScale = d3.scaleBand()
     .range([gameMargin.top, gameHeight - gameMargin.bottom])
     .padding(0.2);
+
+// Game Explorer axis label
+gameSvg.append('text')
+    .attr('x', gameWidth / 2)
+    .attr('y', gameHeight - 15)
+    .attr('text-anchor', 'middle')
+    .attr('fill', 'white')
+    .attr('font-size', '16px')
+    .text('Estimated Global Game Sales (Millions)');
 
 // Axes
 const gameXAxis = gameSvg.append('g')
