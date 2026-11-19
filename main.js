@@ -516,7 +516,7 @@ gameYScale.domain(topGames.map(d => d.gameId));
 
             update => update.transition()
                 .duration(500)
-                .attr('y', d => ggameYScale(d.gameId))
+                .attr('y', d => gameYScale(d.gameId))
                 .attr('height', gameYScale.bandwidth())
                 .attr('width', d => gameXScale(d.Global_Sales) - gameMargin.left),
 
