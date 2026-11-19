@@ -117,6 +117,34 @@ const regionSelect = d3.select('#region-select');
 
 let timer = null;
 
+const consoleImages = {
+    '2600': 'images/atari.jpg',
+    '3DO': 'images/panasonic3DO.jpg',
+    '3DS': 'images/3DS.jpg',
+    'DC': 'images/segadreamcast.jpg',
+    'DS': 'images/ds.jpg',
+    'GB': 'images/gameboy.jpg',
+    'GBA': 'images/GBadvance.jpg',
+    'N64': 'images/64.jpg',
+    'NES': 'images/NES.jpg',
+    'PC': 'images/personalcomputer.jpg',
+    'PS': 'images/ps1.jpg',
+    'PS2': 'images/ps2.jpg',
+    'PS3': 'images/ps3.jpg',
+    'PS4': 'images/ps4.jpg',
+    'PSP': 'images/PSP.jpg',
+    'PSV': 'images/vita.jpg',
+    'SNES': 'images/snes.jpg',
+    'Wii': 'images/wii.jpg',
+    'X360': 'images/x360.jpg',
+    'XB': 'images/originalxbox.jpg',
+    'XOne': 'images/xbox1.jpg'
+};
+
+function getConsoleImage(platform) {
+    return consoleImages[platform] || 'images/defaultgame.jpg';
+}
+
 const tooltip = d3.select('body').append('div').attr('class', 'tooltip');
 
 function moveTooltip(event) {
@@ -126,19 +154,35 @@ function moveTooltip(event) {
 };
 
 function showTooltip(event, d) {
-    const regionName = regionSelect.select(`option[value="${selectedRegion}"]`).text();
-    const currendata = getyearSales(selectedYear);
-    const rank = currendata.findIndex(p => p.platform === d.platform) + 1;
-    tooltip
-    .style('visibility', 'visible')
-    .html(`
-        <strong>Platform:</strong> ${d.platform}<br>
-        <strong>Sales:</strong> ${d.sales.toFixed(1)}M<br>
-        <strong>Rank:</strong> ${rank}<br>
-        <strong>Region:</strong> ${regionName}
-    `);
-    moveTooltip(event);
+    const regionName = regionSelect
+        .select(`option[value="${selectedRegion}"]`)
+        .text();
 
+    const currentData = getyearSales(selectedYear);
+
+    const rank = currentData.findIndex(
+        p => p.platform === d.platform
+    ) + 1;
+
+    const image = getConsoleImage(d.platform);
+
+    tooltip
+        .style('visibility', 'visible')
+        .html(`
+            <div class="tooltip-header">
+                <img src="${image}" alt="${d.platform}">
+                <div>
+                    <strong>${d.platform}</strong>
+                    <div>Rank #${rank}</div>
+                </div>
+            </div>
+
+            <div>Year: ${selectedYear}</div>
+            <div>Region: ${regionName}</div>
+            <div>Game Sales: ${d.sales.toFixed(1)}M</div>
+        `);
+
+    moveTooltip(event);
 }
 
 function hideTooltip() {
@@ -339,3 +383,163 @@ topNSelect.on('change', function() {
 
 // Initial chart
 updateChart(1980);
+
+// Individual Game Explorer controls
+const gamePlatformSelect = d3.select('#game-platform');
+const gameGenreSelect = d3.select('#game-genre');
+
+// Get all unique platforms and genres
+const platforms = [...new Set(cleanData.map(d => d.Platform))].sort();
+const genres = [...new Set(cleanData.map(d => d.Genre))].sort();
+
+// Add platform option
+gamePlatformSelect
+    .selectAll('option.platform-option')
+    .data(platforms)
+    .join('option')
+    .attr('class', 'platform-option')
+    .attr('value', d => d)
+    .text(d => d);
+
+// Add genre option
+gameGenreSelect
+    .selectAll('option.genre-option')
+    .data(genres)
+    .join('option')
+    .attr('class', 'genre-option')
+    .attr('value', d => d)
+    .text(d => d);
+
+    // Individual Game Explorer chart
+const gameWidth = 1000;
+const gameHeight = 550;
+
+const gameMargin = {
+    top: 30,
+    right: 150,
+    bottom: 60,
+    left: 350
+};
+
+const gameSvg = d3.select('#game-chart')
+    .append('svg')
+    .attr('viewBox', `0 0 ${gameWidth} ${gameHeight}`)
+    .style('width', '100%')
+    .style('height', 'auto');
+
+// Scales
+const gameXScale = d3.scaleLinear()
+    .range([gameMargin.left, gameWidth - gameMargin.right]);
+
+const gameYScale = d3.scaleBand()
+    .range([gameMargin.top, gameHeight - gameMargin.bottom])
+    .padding(0.2);
+
+// Axes
+const gameXAxis = gameSvg.append('g')
+    .attr('transform', `translate(0, ${gameHeight - gameMargin.bottom})`);
+
+const gameYAxis = gameSvg.append('g')
+    .attr('transform', `translate(${gameMargin.left}, 0)`);
+
+    function updateGameChart() {
+    const selectedPlatform = gamePlatformSelect.property('value');
+    const selectedGenre = gameGenreSelect.property('value');
+
+    // Filter games based on dropdown selections
+    let filteredGames = cleanData.filter(d =>
+        (selectedPlatform === 'All' || d.Platform === selectedPlatform) &&
+        (selectedGenre === 'All' || d.Genre === selectedGenre)
+    );
+
+    // Get the 10 best-selling games
+    const topGames = filteredGames
+    .sort((a, b) => b.Global_Sales - a.Global_Sales)
+    .slice(0, 10)
+    .map((d, i) => ({
+        ...d,
+        gameId: i,
+        gameLabel: `${d.Name} (${d.Platform})`
+    }));
+
+    // Update scales
+    const maxSales = d3.max(topGames, d => d.Global_Sales) || 1;
+
+    gameXScale.domain([0, maxSales * 1.1]);
+gameYScale.domain(topGames.map(d => d.gameId));
+    // Update axes
+    gameXAxis
+        .transition()
+        .duration(500)
+        .call(d3.axisBottom(gameXScale).ticks(5).tickFormat(d => d + 'M'));
+
+    gameYAxis
+    .transition()
+    .duration(500)
+    .call(
+        d3.axisLeft(gameYScale)
+            .tickSize(0)
+            .tickPadding(10)
+            .tickFormat(id => {
+                const game = topGames.find(d => d.gameId === id);
+                return game ? game.gameLabel : '';
+            })
+    );
+
+    // Draw bars
+    gameSvg.selectAll('.game-bar')
+        .data(topGames, d => d.Name + '|' + d.Platform + '|' + d.Year)
+        .join(
+            enter => enter.append('rect')
+                .attr('class', 'game-bar')
+                .attr('x', gameMargin.left)
+                .attr('y', d => gameYScale(d.gameId))
+                .attr('height', gameYScale.bandwidth())
+                .attr('width', 0)
+                .attr('rx', 5)
+                .attr('fill', '#38bdf8')
+                .call(enter => enter.transition()
+                    .duration(500)
+                    .attr('width', d => gameXScale(d.Global_Sales) - gameMargin.left)
+                ),
+
+            update => update.transition()
+                .duration(500)
+                .attr('y', d => ggameYScale(d.gameId))
+                .attr('height', gameYScale.bandwidth())
+                .attr('width', d => gameXScale(d.Global_Sales) - gameMargin.left),
+
+            exit => exit.transition()
+                .duration(300)
+                .attr('width', 0)
+                .remove()
+        );
+
+    // Sales labels
+    gameSvg.selectAll('.game-sales-label')
+        .data(topGames, d => d.Name + '|' + d.Platform + '|' + d.Year)
+        .join(
+            enter => enter.append('text')
+                .attr('class', 'game-sales-label')
+                .attr('x', d => gameXScale(d.Global_Sales) + 8)
+                .attr('y', d => gameYScale(d.gameId) + gameYScale.bandwidth() / 2)
+                .attr('dy', '0.35em')
+                .text(d => d.Global_Sales.toFixed(1) + 'M'),
+
+            update => update
+                .text(d => d.Global_Sales.toFixed(1) + 'M')
+                .call(update => update.transition()
+                    .duration(500)
+                    .attr('x', d => gameXScale(d.Global_Sales) + 8)
+                    .attr('y', d => gameYScale(d.gameId) + gameYScale.bandwidth() / 2)),
+
+            exit => exit.remove()
+        );
+}
+
+// Update chart when filters change
+gamePlatformSelect.on('change', updateGameChart);
+gameGenreSelect.on('change', updateGameChart);
+
+// Display initial chart
+updateGameChart();

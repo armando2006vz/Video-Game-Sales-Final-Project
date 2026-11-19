@@ -226,3 +226,69 @@ footer {
     margin: 10px;
 }
 
+.tooltip-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.tooltip-header img {
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
+    object-fit: contain;
+    background: white;
+    padding: 5px;
+}
+
+.tooltip-header strong {
+    color: #38bdf8;
+    font-size: 18px;
+}
+
+#game-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+#game-controls label {
+    color: #cbd5e1;
+    font-size: 14px;
+}
+
+#game-controls select {
+    background: #1e293b;
+    color: white;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 10px;
+    cursor: pointer;
+}
+
+#game-chart {
+    width: 100%;
+    margin-top: 20px;
+}
+
+#game-chart .tick text {
+    fill: #cbd5e1;
+    font-size: 12px;
+}
+
+#game-chart .tick line,
+#game-chart .domain {
+    stroke: #475569;
+}
+
+.game-sales-label {
+    fill: white;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.game-bar {
+    cursor: pointer;
+}
