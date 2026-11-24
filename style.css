@@ -388,3 +388,80 @@ footer {
         grid-template-columns: 1fr;
     }
 }
+
+#regional-chart .tick text {
+    fill: #cbd5e1;
+    font-size: 15px;
+}
+
+#regional-chart .tick line,
+#regional-chart .domain {
+    stroke: #475569;
+}
+
+#regional-legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 15px;
+}
+
+.regional-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #cbd5e1;
+    font-size: 13px;
+}
+
+.regional-legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    display: inline-block;
+}
+
+#era-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+#era-controls label {
+    color: #cbd5e1;
+    font-size: 14px;
+}
+
+#era-controls select {
+    background: #1e293b;
+    color: white;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 10px;
+    cursor: pointer;
+}
+
+#era-legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 14px 20px;
+    margin-top: 15px;
+}
+
+.era-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #cbd5e1;
+    font-size: 13px;
+}
+
+.era-legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    display: inline-block;
+}

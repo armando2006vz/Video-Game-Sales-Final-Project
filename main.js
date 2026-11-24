@@ -729,3 +729,303 @@ genreLegend.selectAll('.genre-legend-item')
         genreSvg.selectAll('.genre-area')
             .style('opacity', 1);
     });
+
+    // Regional Preferences Chart
+
+const regionalData = d3.rollups(
+    cleanData,
+    v => ({
+        Global: d3.sum(v, d => d.Global_Sales),
+        NA: d3.sum(v, d => d.NA_Sales),
+        EU: d3.sum(v, d => d.EU_Sales),
+        JP: d3.sum(v, d => d.JP_Sales)
+    }),
+    d => d.Platform
+)
+.map(([platform, sales]) => ({
+    platform: platform,
+    ...sales
+}))
+.sort((a, b) => b.Global - a.Global)
+.slice(0, 5);
+
+console.log(regionalData);
+
+const regionalWidth = 650;
+const regionalHeight = 400;
+
+const regionalMargin = {
+    top: 30,
+    right: 30,
+    bottom: 60,
+    left: 65
+};
+
+const regionalSvg = d3.select('#regional-chart')
+    .append('svg')
+    .attr('viewBox', `0 0 ${regionalWidth} ${regionalHeight}`)
+    .style('width', '100%')
+    .style('height', 'auto');
+
+    const regions = ['NA', 'EU', 'JP'];
+
+// Platform positions
+const regionalXScale = d3.scaleBand()
+    .domain(regionalData.map(d => d.platform))
+    .range([
+        regionalMargin.left,
+        regionalWidth - regionalMargin.right
+    ])
+    .padding(0.2);
+
+// Region positions within each platform
+const regionalGroupScale = d3.scaleBand()
+    .domain(regions)
+    .range([0, regionalXScale.bandwidth()])
+    .padding(0.1);
+
+// Sales scale
+const regionalYScale = d3.scaleLinear()
+    .domain([
+        0,
+        d3.max(regionalData, d => Math.max(d.NA, d.EU, d.JP))
+    ])
+    .nice()
+    .range([
+        regionalHeight - regionalMargin.bottom,
+        regionalMargin.top
+    ]);
+
+// Region colors
+const regionalColorScale = d3.scaleOrdinal()
+    .domain(regions)
+    .range(['#38bdf8', '#a78bfa', '#edc948']);
+
+    // X-axis
+regionalSvg.append('g')
+    .attr('transform', `translate(0, ${regionalHeight - regionalMargin.bottom})`)
+    .call(d3.axisBottom(regionalXScale));
+
+// Y-axis
+regionalSvg.append('g')
+    .attr('transform', `translate(${regionalMargin.left}, 0)`)
+    .call(
+        d3.axisLeft(regionalYScale)
+            .ticks(6)
+            .tickFormat(d => d + 'M')
+    );
+
+    const regionalGroups = regionalSvg.selectAll('.regional-group')
+    .data(regionalData)
+    .join('g')
+    .attr('class', 'regional-group')
+    .attr('transform', d => `translate(${regionalXScale(d.platform)}, 0)`);
+
+regionalGroups.selectAll('rect')
+    .data(d => regions.map(region => ({
+        platform: d.platform,
+        region: region,
+        sales: d[region]
+    })))
+    .join('rect')
+    .attr('x', d => regionalGroupScale(d.region))
+    .attr('y', d => regionalYScale(d.sales))
+    .attr('width', regionalGroupScale.bandwidth())
+    .attr('height', d =>
+        regionalYScale(0) - regionalYScale(d.sales)
+    )
+    .attr('fill', d => regionalColorScale(d.region))
+    .attr('rx', 3);
+
+    const regionalNames = {
+    NA: 'North America',
+    EU: 'Europe',
+    JP: 'Japan'
+};
+
+const regionalLegend = d3.select('#regional-legend');
+
+regionalLegend.selectAll('.regional-legend-item')
+    .data(regions)
+    .join('div')
+    .attr('class', 'regional-legend-item')
+    .html(d => `
+        <span class="regional-legend-color"
+            style="background-color: ${regionalColorScale(d)}">
+        </span>
+        <span>${regionalNames[d]}</span>
+    `);
+
+    const regionalTooltip = d3.select('body')
+    .append('div')
+    .attr('class', 'tooltip')
+    .style('visibility', 'hidden');
+
+regionalGroups.selectAll('rect')
+    .on('mouseover', function(event, d) {
+        regionalGroups.selectAll('rect')
+            .style('opacity', 0.3);
+
+        d3.select(this)
+            .style('opacity', 1);
+
+        regionalTooltip
+            .style('visibility', 'visible')
+            .html(`
+                <strong>${d.platform}</strong>
+                <div>Region: ${regionalNames[d.region]}</div>
+                <div>Game Sales: ${formatSales(d.sales)}</div>
+            `);
+    })
+    .on('mousemove', function(event) {
+        regionalTooltip
+            .style('left', (event.clientX + 10) + 'px')
+            .style('top', (event.clientY - 28) + 'px');
+    })
+    .on('mouseout', function() {
+        regionalGroups.selectAll('rect')
+            .style('opacity', 1);
+
+        regionalTooltip
+            .style('visibility', 'hidden');
+    });
+
+    // Visualization 5: Company Market Share
+
+const platformCompanies = {
+    // Sony
+    PS: 'Sony',
+    PS2: 'Sony',
+    PS3: 'Sony',
+    PS4: 'Sony',
+    PSP: 'Sony',
+    PSV: 'Sony',
+
+    // Microsoft
+    XB: 'Microsoft',
+    X360: 'Microsoft',
+    XOne: 'Microsoft',
+
+    // Nintendo
+    NES: 'Nintendo',
+    SNES: 'Nintendo',
+    N64: 'Nintendo',
+    GC: 'Nintendo',
+    Wii: 'Nintendo',
+    WiiU: 'Nintendo',
+    GB: 'Nintendo',
+    GBA: 'Nintendo',
+    DS: 'Nintendo',
+    '3DS': 'Nintendo',
+
+    // Sega
+    GEN: 'Sega',
+    SAT: 'Sega',
+    DC: 'Sega',
+    SCD: 'Sega',
+    GG: 'Sega',
+
+    // Other platforms
+    '2600': 'Other',
+    WS: 'Other',
+    NG: 'Other',
+    TG16: 'Other',
+    '3DO': 'Other',
+    PCFX: 'Other',
+    PC: 'Other'
+};
+
+const eraSelect = d3.select('#era-select');
+
+function getCompanySales(startYear) {
+
+    const endYear = Math.min(startYear + 9, 2016);
+
+    const filteredData = cleanData.filter(d =>
+        d.Year >= startYear && d.Year <= endYear
+    );
+
+    const companySales = d3.rollups(
+        filteredData,
+        v => d3.sum(v, d => d.Global_Sales),
+        d => platformCompanies[d.Platform] || 'Other'
+    )
+    .map(([company, sales]) => ({
+        company: company,
+        sales: sales
+    }))
+    .sort((a, b) => b.sales - a.sales);
+
+    return companySales;
+}
+
+console.log(getCompanySales(2000));
+
+const eraWidth = 650;
+const eraHeight = 400;
+
+const eraSvg = d3.select('#era-chart')
+    .append('svg')
+    .attr('viewBox', `0 0 ${eraWidth} ${eraHeight}`)
+    .style('width', '100%')
+    .style('height', 'auto');
+
+const eraGroup = eraSvg.append('g')
+    .attr('transform',
+        `translate(${eraWidth / 2}, ${eraHeight / 2})`
+    );
+
+const companyColorScale = d3.scaleOrdinal()
+    .domain(['Sony', 'Microsoft', 'Nintendo', 'Sega', 'Other'])
+    .range(['#38bdf8', '#22c55e', '#ef4444', '#a78bfa', '#64748b']);
+
+    const companyPie = d3.pie()
+    .value(d => d.sales)
+    .sort(null);
+
+const companyArc = d3.arc()
+    .innerRadius(85)
+    .outerRadius(160);
+
+const eraTooltip = d3.select('body')
+    .append('div')
+    .attr('class', 'tooltip')
+    .style('visibility', 'hidden');
+
+    function updateCompanyChart() {
+
+    const startYear = +eraSelect.property('value');
+
+    const companySales = getCompanySales(startYear);
+
+    const totalSales = d3.sum(companySales, d => d.sales);
+
+    const pieData = companyPie(companySales);
+
+    eraGroup.selectAll('.company-slice')
+        .data(pieData)
+        .join('path')
+        .attr('class', 'company-slice')
+        .attr('d', companyArc)
+        .attr('fill', d => companyColorScale(d.data.company))
+        .attr('stroke', '#111c30')
+        .attr('stroke-width', 3);
+
+    d3.select('#era-legend')
+    .selectAll('.era-legend-item')
+    .data(companySales)
+    .join('div')
+    .attr('class', 'era-legend-item')
+    .html(d => `
+        <span class="era-legend-color"
+            style="background-color: ${companyColorScale(d.company)}">
+        </span>
+        <span>${d.company} 
+            (${(d.sales / totalSales * 100).toFixed(1)}%)
+        </span>
+    `);
+}
+
+eraSelect.on('change', updateCompanyChart);
+
+updateCompanyChart();
