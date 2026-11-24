@@ -69,11 +69,11 @@ let selectedYear = 1980;
 let topN = 5;
 let selectedRegion = 'Global_Sales';
 
-// Sales scale (horizontal)
+// Sales scale 
 const xScale = d3.scaleLinear()
     .range([margin.left, width - margin.right]);
 
-// Platform positions (vertical)
+// Platform positions 
 const yScale = d3.scaleBand()
     .range([margin.top, height - margin.bottom])
     .padding(0.2);
@@ -99,14 +99,7 @@ svg.append('text')
     .attr('font-size', '16px')
     .text('Estimated Global Game Sales (Millions)');
 
-// Large year label
-const yearLabel = svg.append('text')
-    .attr('x', width - margin.right)
-    .attr('y', 35)
-    .attr('text-anchor', 'end')
-    .attr('font-size', 32)
-    .attr('font-weight', 'bold')
-    .text(selectedYear);
+
 
 // Controls
 const yearSlider = d3.select('#year-slider');
@@ -147,7 +140,20 @@ function getConsoleImage(platform) {
     return consoleImages[platform] || 'images/defaultgame.jpg';
 }
 
+function formatSales(sales) {
+    if (sales < 1) {
+        return (sales * 1000).toFixed(0) + 'K';
+    } else {
+        return sales.toFixed(1) + 'M';
+    }
+}
+
 const tooltip = d3.select('body').append('div').attr('class', 'tooltip');
+
+let hoveredPlatform = null;
+let lastMouseEvent = null;
+
+
 
 function moveTooltip(event) {
     tooltip
@@ -156,6 +162,9 @@ function moveTooltip(event) {
 };
 
 function showTooltip(event, d) {
+    hoveredPlatform = d.platform;
+    lastMouseEvent = event;
+
     const regionName = regionSelect
         .select(`option[value="${selectedRegion}"]`)
         .text();
@@ -181,13 +190,15 @@ function showTooltip(event, d) {
 
             <div>Year: ${selectedYear}</div>
             <div>Region: ${regionName}</div>
-            <div>Game Sales: ${d.sales.toFixed(1)}M</div>
+            <div>Game Sales: ${formatSales(d.sales)}</div>
         `);
 
     moveTooltip(event);
 }
 
 function hideTooltip() {
+    hoveredPlatform = null;
+    lastMouseEvent = null;
     tooltip.style('visibility', 'hidden');
 }
 
@@ -224,13 +235,11 @@ function updateStoryboard(year, currentData) {
         return;
     }
     const leadingPlatform = currentData[0].platform;
-    const leadingSales = currentData[0].sales.toFixed(1);
-
+const leadingSales = formatSales(currentData[0].sales);
     const regionName = regionSelect.select(`option[value="${selectedRegion}"]`).text();
 
     storyTitle.text(`Top Platform in ${year}`);
-    storyText.text(`In ${year}, the leading platform was ${leadingPlatform} with estimated sales of ${leadingSales} million units in the ${regionName} region.`);
-}
+storyText.text(`In ${year}, the leading platform was ${leadingPlatform} with estimated game sales of ${leadingSales} in the ${regionName} region.`);}
 
 
 function updateChart(year) {
@@ -266,16 +275,16 @@ function updateChart(year) {
                 .attr('fill', d => colorScale(d.platform))
                 .call(enter => enter.transition()
                     .duration(500)
-                    .attr('width', d => xScale(d.sales) - margin.left)
-                ),
+.attr('width', d => xScale(d.sales) - margin.left)            
+),
 
             update => update
                 .call(update => update.transition()
                     .duration(500)
                     .attr('y', d => yScale(d.platform))
                     .attr('height', yScale.bandwidth())
-                    .attr('width', d => xScale(d.sales) - margin.left)
-                ),
+.attr('width', d => xScale(d.sales) - margin.left)        
+    ),
 
             exit => exit
                 .transition()
@@ -294,10 +303,10 @@ function updateChart(year) {
                     .attr('x', d => xScale(d.sales) + 8)
                     .attr('y', d => yScale(d.platform) + yScale.bandwidth() / 2)
                     .attr('dy', '0.35em')
-                    .text(d => d.sales.toFixed(1) + 'M'),
+                    .text(d => formatSales(d.sales)),
                 
                     update => update
-                .text(d => d.sales.toFixed(1) + 'M')
+                .text(d => formatSales(d.sales))
                 .call(update => update.transition()
                 .duration(500)
                 .attr('x', d => xScale(d.sales) + 8)
@@ -305,13 +314,27 @@ function updateChart(year) {
             ),
                 
                 exit => exit.remove() 
-            );
+            )
+            .on('mouseover', showTooltip)
+            .on('mousemove', moveTooltip)
+            .on('mouseout', hideTooltip);
 
     // Update year displays
-    yearLabel.text(selectedYear);
     yearSlider.property('value', selectedYear);
     yearDisplay.text(selectedYear);
     updateStoryboard(selectedYear, currentData);
+    // Refresh tooltip when the year changes
+if (hoveredPlatform !== null) {
+    const hoveredData = currentData.find(
+        d => d.platform === hoveredPlatform
+    );
+
+    if (hoveredData) {
+        showTooltip(lastMouseEvent, hoveredData);
+    } else {
+        hideTooltip();
+    }
+}
 }
 
 // Stop animation
@@ -548,9 +571,161 @@ gameYScale.domain(topGames.map(d => d.gameId));
         );
 }
 
-// Update chart when filters change
+// Update chart when filter change
 gamePlatformSelect.on('change', updateGameChart);
 gameGenreSelect.on('change', updateGameChart);
 
-// Display initial chart
+//  initial chart
 updateGameChart();
+
+// Genre Evolution Chart
+
+const genreChartData = d3.range(1980, 2017).map(year => {
+    const row = { Year: year };
+
+    genres.forEach(genre => {
+        row[genre] = d3.sum(
+            cleanData.filter(d => d.Year === year && d.Genre === genre),
+            d => d.Global_Sales
+        );
+    });
+
+    return row;
+});
+
+console.log(genreChartData);
+
+const genreWidth = 1000;
+const genreHeight = 550;
+
+const genreMargin = {
+    top: 50,
+    right: 50,
+    bottom: 70,
+    left: 100
+};
+
+const genreSvg = d3.select('#genre-chart')
+    .append('svg')
+    .attr('viewBox', `0 0 ${genreWidth} ${genreHeight}`)
+    .style('width', '100%')
+    .style('height', 'auto');
+
+const genreXScale = d3.scaleLinear()
+    .domain([1980, 2016])
+    .range([genreMargin.left, genreWidth - genreMargin.right]);
+
+const genreYScale = d3.scaleLinear()
+    .range([genreHeight - genreMargin.bottom, genreMargin.top]);
+
+    const genreStack = d3.stack()
+    .keys(genres);
+
+const genreStackedData = genreStack(genreChartData);
+
+genreYScale.domain([
+    0,
+    d3.max(genreStackedData, genre =>
+        d3.max(genre, d => d[1])
+    )
+]);
+
+// Colors for each genre
+const genreColorScale = d3.scaleOrdinal()
+    .domain(genres)
+   .range([
+        '#4e79a7', '#f28e2b', '#e15759',
+        '#76b7b2', '#59a14f', '#edc948',
+        '#b07aa1', '#ff9da7', '#9c755f',
+        '#bab0ac', '#38bdf8', '#a78bfa'
+    ]);
+
+const genreArea = d3.area()
+    .x(d => genreXScale(d.data.Year))
+    .y0(d => genreYScale(d[0]))
+    .y1(d => genreYScale(d[1]));
+
+// Genre tooltip
+const genreTooltip = d3.select('body')
+    .append('div')
+    .attr('class', 'tooltip')
+    .style('visibility', 'hidden');
+
+// Draw interactive stacked areas
+genreSvg.selectAll('.genre-area')
+    .data(genreStackedData)
+    .join('path')
+    .attr('class', 'genre-area')
+    .attr('d', genreArea)
+    .attr('fill', d => genreColorScale(d.key))
+
+    .on('mouseover', function(event, d) {
+        // Highlight selected genre
+        genreSvg.selectAll('.genre-area')
+            .style('opacity', 0.25);
+
+        d3.select(this)
+            .style('opacity', 1);
+
+        genreTooltip.style('visibility', 'visible');
+    })
+
+    .on('mousemove', function(event, d) {
+        // Find the year closest to the mouse
+        const [mouseX] = d3.pointer(event, genreSvg.node());
+
+        const year = Math.max(
+            1980,
+            Math.min(2016, Math.round(genreXScale.invert(mouseX)))
+        );
+
+        // Get sales for this genre and year
+        const yearData = genreChartData.find(row => row.Year === year);
+        const sales = yearData[d.key];
+
+        genreTooltip
+            .html(`
+                <strong>${d.key}</strong>
+                <div>Year: ${year}</div>
+                <div>Global Game Sales: ${formatSales(sales)}</div>
+            `)
+            .style('left', (event.clientX + 10) + 'px')
+            .style('top', (event.clientY - 28) + 'px');
+    })
+
+    .on('mouseout', function() {
+        genreSvg.selectAll('.genre-area')
+            .style('opacity', 1);
+
+        genreTooltip.style('visibility', 'hidden');
+    });
+    // X-axis: Release year of game
+genreSvg.append('g')
+    .attr('transform', `translate(0, ${genreHeight - genreMargin.bottom})`)
+    .call(d3.axisBottom(genreXScale).ticks(9).tickFormat(d3.format('d')));
+
+// Y-axis: Estimated video game sales
+genreSvg.append('g')
+    .attr('transform', `translate(${genreMargin.left}, 0)`)
+    .call(d3.axisLeft(genreYScale).ticks(6).tickFormat(d => d + 'M'));
+
+// Genre legend
+const genreLegend = d3.select('#genre-legend');
+
+genreLegend.selectAll('.genre-legend-item')
+    .data(genres)
+    .join('div')
+    .attr('class', 'genre-legend-item')
+    .html(d => `
+        <span class="genre-legend-color"
+              style="background-color: ${genreColorScale(d)}"></span>
+        <span>${d}</span>
+    `)
+    .on('mouseover', function(event, genre) {
+        genreSvg.selectAll('.genre-area')
+            .style('opacity', d => d.key === genre ? 1 : 0.15);
+    })
+    .on('mouseout', function() {
+        genreSvg.selectAll('.genre-area')
+            .style('opacity', 1);
+    });
